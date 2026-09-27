@@ -1,4 +1,4 @@
-FROM php:8.2-cli-bookworm AS vendor
+FROM php:8.4-cli-bookworm AS vendor
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -37,7 +37,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM php:8.2-cli-bookworm
+FROM php:8.4-cli-bookworm
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
