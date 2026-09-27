@@ -7,6 +7,7 @@ use App\Models\SmsCreditOrder;
 use Illuminate\Support\Facades\Crypt;
 use App\Services\OlympusSmsService;
 use App\Services\SmsCapacityService;
+use App\Services\PlatformPaymentGateway;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -140,6 +141,25 @@ class PlatformSettings extends Component
         } catch (\Throwable $exception) {
             report($exception);
             $this->addError('smsTestPhone', 'Could not refresh Olympus balance: ' . $exception->getMessage());
+        }
+    }
+
+    public function testPayhero(PlatformPaymentGateway $gateway): void
+    {
+        abort_unless(auth()->user()?->hasRole('super-admin'), 403);
+        // Test the currently entered values too, without exposing or persisting them.
+        config()->set('services.platform_payments.default', 'payhero');
+        config()->set('services.payhero.base_url', $this->payheroBaseUrl);
+        config()->set('services.payhero.channel_id', $this->payheroChannelId);
+        config()->set('services.payhero.callback_url', $this->payheroCallbackUrl);
+        if ($this->payheroUsername !== '') config()->set('services.payhero.username', $this->payheroUsername);
+        if ($this->payheroPassword !== '') config()->set('services.payhero.password', $this->payheroPassword);
+        try {
+            $channel = $gateway->testPayheroConnection();
+            session()->flash('success', 'PayHero connection verified. Active channel: ' . ($channel['description'] ?? $channel['short_code'] ?? $channel['id']) . '. Save settings to make it the live default provider.');
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('payheroChannelId', $exception->getMessage());
         }
     }
 

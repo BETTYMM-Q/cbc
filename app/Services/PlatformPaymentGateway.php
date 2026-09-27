@@ -68,4 +68,25 @@ class PlatformPaymentGateway
         if (! $response->successful()) throw new \RuntimeException($data['error_message'] ?? 'PayHero status verification failed.');
         return $data;
     }
+
+    /** Confirm credentials work and that the configured collection channel is active. */
+    public function testPayheroConnection(): array
+    {
+        if (! $this->configured()) {
+            throw new \RuntimeException('Save the PayHero API username, API password, and registered channel ID first.');
+        }
+        $response = Http::acceptJson()->withBasicAuth(
+            (string) config('services.payhero.username'),
+            (string) config('services.payhero.password')
+        )->get(rtrim((string) config('services.payhero.base_url'), '/') . '/api/v2/payment_channels', ['is_active' => 'true']);
+        $data = $response->json() ?: [];
+        if (! $response->successful()) {
+            throw new \RuntimeException($data['error_message'] ?? 'PayHero rejected the API credentials.');
+        }
+        $channel = collect($data['payment_channels'] ?? [])->firstWhere('id', (int) config('services.payhero.channel_id'));
+        if (! $channel || empty($channel['is_active'])) {
+            throw new \RuntimeException('The configured PayHero channel ID was not found among this account’s active payment channels. Create/activate a Paybill or Till in PayHero, then save its channel ID here.');
+        }
+        return $channel;
+    }
 }
