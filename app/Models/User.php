@@ -7,10 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Concerns\BelongsToSchool;
+use LaravelWebauthn\WebauthnAuthenticatable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles, BelongsToSchool;
+    use HasFactory, Notifiable, HasRoles, BelongsToSchool, WebauthnAuthenticatable;
 
     protected $fillable = ['name', 'email', 'password', 'school_id', 'status', 'must_change_password'];
     protected $hidden   = ['password', 'remember_token'];

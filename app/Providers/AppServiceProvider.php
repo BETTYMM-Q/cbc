@@ -18,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // WebAuthn login must land in the same role-specific portal as the
+        // password flow, not at the public root/login page.
+        $this->app->bind(\LaravelWebauthn\Contracts\LoginSuccessResponse::class, \App\Http\Responses\WebauthnLoginSuccessResponse::class);
     }
 
     public function boot(): void

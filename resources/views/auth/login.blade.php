@@ -70,6 +70,7 @@
                     Sign In
                 </button>
             </form>
+            <a href="{{ route('webauthn.login') }}" class="mt-3 flex w-full items-center justify-center rounded-lg border border-green-300 py-2.5 text-sm font-semibold text-green-700">Use fingerprint / biometric login</a>
         </div>
 
         <a href="{{ route('learning.miyagi') }}" target="_blank" rel="noopener noreferrer" class="mt-5 flex items-center justify-center rounded-lg border border-green-200 bg-white/95 px-4 py-3 text-sm font-semibold text-green-800 shadow hover:bg-green-50">
