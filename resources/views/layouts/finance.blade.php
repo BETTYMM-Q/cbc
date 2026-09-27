@@ -31,7 +31,7 @@
         </nav>
         <div class="px-4 py-3 border-t border-indigo-800">
             <p class="text-indigo-300 text-xs">{{ auth()->user()->name }}</p>
-            <form method="POST" action="{{ route('logout') }}">@csrf<button class="text-xs text-indigo-400 hover:text-white mt-1">Sign out</button></form>
+            <div class="mt-1 flex gap-3 text-indigo-400">@include('layouts.partials.change-password-link')<form method="POST" action="{{ route('logout') }}">@csrf<button class="text-xs hover:text-white">Sign out</button></form></div>
         </div>
     </aside>
     <div class="min-h-screen md:ml-60">

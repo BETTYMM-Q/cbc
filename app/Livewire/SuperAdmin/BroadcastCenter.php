@@ -15,6 +15,7 @@ class BroadcastCenter extends Component
     public string $message = '';
     public bool $sendSms = false;
     public bool $pinBanner = true;
+    public int $bannerDays = 7;
 
     public function mount(): void
     {
@@ -26,6 +27,7 @@ class BroadcastCenter extends Component
         $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:2000'],
+            'bannerDays' => ['required', 'integer', 'min:1', 'max:365'],
         ]);
 
         $schools = School::where('is_active', true)->get();
@@ -62,9 +64,9 @@ class BroadcastCenter extends Component
             });
         }
 
-        $broadcast->update(['status' => 'sent', 'sent_at' => now(), 'schools_notified' => $notified]);
+        $broadcast->update(['status' => 'sent', 'sent_at' => now(), 'expires_at' => now()->addDays($this->bannerDays), 'schools_notified' => $notified]);
 
-        $this->reset(['title', 'message', 'sendSms', 'pinBanner']);
+        $this->reset(['title', 'message', 'sendSms', 'pinBanner', 'bannerDays']);
         session()->flash('success', "Broadcast sent to {$notified} school(s).");
     }
 

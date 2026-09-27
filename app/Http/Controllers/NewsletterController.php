@@ -21,6 +21,10 @@ class NewsletterController extends Controller
     public function update(Request $request, Newsletter $newsletter): RedirectResponse
     {
         $newsletter->update([...$this->payload($request), 'updated_by' => $request->user()->id]);
+        if ($request->boolean('publish')) {
+            $newsletter->update(['is_published' => true, 'published_at' => now(), 'published_by' => $request->user()->id]);
+            return back()->with('success', 'Newsletter saved and published to teachers, parents and learners.');
+        }
         return back()->with('success', 'Newsletter saved.');
     }
     public function destroy(Newsletter $newsletter): RedirectResponse { $newsletter->delete(); return redirect()->route('admin.newsletters.index')->with('success', 'Newsletter deleted.'); }

@@ -21,7 +21,7 @@
             <input type="checkbox" wire:model="sendSms" class="mt-1">
             <span class="text-sm text-gray-700">Also send via SMS to every school's guardians <span class="block text-xs text-yellow-700">Uses each school's own SMS credit balance — only enable if schools have been informed.</span></span>
         </label>
-        <label class="flex items-start gap-2"><input type="checkbox" wire:model="pinBanner" class="mt-1"><span class="text-sm text-gray-700">Pin as the current all-user banner <span class="block text-xs text-gray-500">It remains visible in every portal until the Super Admin publishes a newer pinned banner.</span></span></label>
+        <div class="grid gap-4 md:grid-cols-2"><label class="flex items-start gap-2"><input type="checkbox" wire:model="pinBanner" class="mt-1"><span class="text-sm text-gray-700">Show as an all-user portal banner <span class="block text-xs text-gray-500">The message is visible in every portal until its chosen end date.</span></span></label><label><span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Banner display days</span><input wire:model="bannerDays" type="number" min="1" max="365" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm">@error('bannerDays')<span class="text-xs text-red-600">{{ $message }}</span>@enderror</label></div>
         <button wire:click="send" wire:confirm="Send this to every active school now?" class="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-800">
             Send broadcast
         </button>
@@ -38,7 +38,7 @@
                     <tr>
                         <td class="px-4 py-3">{{ $broadcast->created_at->format('d M Y H:i') }}</td>
                         <td class="px-4 py-3 font-medium text-gray-800">{{ $broadcast->title }}</td>
-                        <td class="px-4 py-3">{{ $broadcast->is_pinned ? 'Pinned' : 'Temporary' }}</td><td class="px-4 py-3">{{ $broadcast->send_sms ? 'Yes' : 'No' }}</td>
+                        <td class="px-4 py-3">{{ $broadcast->is_pinned ? 'Until '.($broadcast->expires_at?->format('d M Y') ?? 'legacy expiry') : 'Temporary' }}</td><td class="px-4 py-3">{{ $broadcast->send_sms ? 'Yes' : 'No' }}</td>
                         <td class="px-4 py-3">{{ $broadcast->schools_notified }} / {{ $broadcast->total_schools }}</td>
                         <td class="px-4 py-3 capitalize">{{ $broadcast->status }}</td>
                     </tr>

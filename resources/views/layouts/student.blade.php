@@ -24,7 +24,7 @@
             <a href="{{ route('legal.terms') }}" class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-100 hover:bg-emerald-800">Terms and Conditions</a>
             <a href="{{ route('legal.privacy') }}" class="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-100 hover:bg-emerald-800">Privacy Policy</a>
         </nav>
-        <div class="border-t border-emerald-800 px-4 py-3"><p class="truncate text-xs text-emerald-200">{{ auth()->user()->name }}</p><form method="POST" action="{{ route('logout') }}">@csrf<button class="mt-1 text-xs text-emerald-300 hover:text-white">Sign out</button></form></div>
+        <div class="border-t border-emerald-800 px-4 py-3"><p class="truncate text-xs text-emerald-200">{{ auth()->user()->name }}</p><div class="mt-1 flex gap-3 text-emerald-300">@include('layouts.partials.change-password-link')<form method="POST" action="{{ route('logout') }}">@csrf<button class="text-xs hover:text-white">Sign out</button></form></div></div>
     </aside>
     <div class="min-h-screen md:ml-60">
         <header class="flex h-14 items-center gap-3 bg-white px-4 shadow-sm md:px-6"><button type="button" data-mobile-menu aria-expanded="false" class="relative z-50 rounded-lg p-2 text-gray-700 md:hidden" aria-label="Open menu">&#9776;</button><h1 class="truncate text-lg font-semibold text-gray-800">{{ $header ?? 'Student Portal' }}</h1><div class="ml-auto flex items-center gap-2">@include('layouts.partials.theme-toggle')<form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600">Log out</button></form></div></header>

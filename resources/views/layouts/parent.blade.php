@@ -16,7 +16,7 @@
         <h1 class="text-xl font-bold text-green-900">{{ config('school.name') }}</h1>
         @include('layouts.partials.online-users')
         @include('layouts.partials.theme-toggle')
-        <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="text-sm text-red-600">Logout</button></form>
+        <div class="flex items-center gap-3"><a href="{{ route('account.password.edit') }}" class="text-sm text-green-700">Change password</a><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="text-sm text-red-600">Logout</button></form></div>
     </div>
     <nav class="mb-6 flex flex-wrap gap-2">
         @php($featureMap = ['parent.fees.index' => 'fees', 'parent.notes.index' => 'lesson_plans', 'parent.exam-timetable' => 'timetable', 'parent.newsletters' => 'newsletters'])

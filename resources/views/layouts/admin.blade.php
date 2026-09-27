@@ -63,10 +63,7 @@
         </nav>
         <div class="shrink-0 border-t border-green-700 bg-green-900 px-4 py-3">
             <p class="truncate text-xs text-green-200">{{ auth()->user()->name }}</p>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="mt-1 text-xs text-green-300 hover:text-white">Sign out</button>
-            </form>
+            <div class="mt-1 flex gap-3 text-green-300">@include('layouts.partials.change-password-link')<form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="text-xs hover:text-white">Sign out</button></form></div>
         </div>
     </aside>
     <div class="md:pl-64">

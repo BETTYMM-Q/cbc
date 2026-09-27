@@ -8,13 +8,14 @@ class PlatformBroadcast extends Model
 {
     protected $fillable = [
         'title', 'message', 'send_sms', 'is_pinned', 'status', 'created_by',
-        'total_schools', 'schools_notified', 'sent_at',
+        'total_schools', 'schools_notified', 'sent_at', 'expires_at',
     ];
 
     protected $casts = [
         'send_sms' => 'boolean',
         'is_pinned' => 'boolean',
         'sent_at'  => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     public function creator()
