@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Exam;
 use App\Policies\ExamPolicy;
+use App\Models\User;
+use App\Services\SchoolAttendanceLocationService;
+use App\Support\Tenant;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +39,26 @@ class AppServiceProvider extends ServiceProvider
         $this->loadPlatformMpesaSettings();
         $this->loadPlatformPaymentSettings();
         $this->loadPlatformBranding();
+
+        // This is deliberately tied to a successful authenticated login, not
+        // merely a dashboard visit.  The service still requires a school
+        // administrator to have explicitly enabled automatic attendance and
+        // supplied an approved network range; all other teachers retain the
+        // manual clock-in option in their portal.
+        Event::listen(Login::class, function (Login $event): void {
+            if (! $event->user instanceof User || ! $event->user->school_id || ! $event->user->resolvedStaffMember()) {
+                return;
+            }
+
+            try {
+                Tenant::run($event->user->school_id, fn () => app(SchoolAttendanceLocationService::class)->automaticClockIn($event->user, request()));
+            } catch (\Throwable $exception) {
+                // Attendance must never prevent a valid account from logging
+                // in. Keep the exception observable while leaving manual
+                // clock-in available to the teacher.
+                report($exception);
+            }
+        });
 
         if (app()->environment('production')) {
             URL::forceScheme('https');

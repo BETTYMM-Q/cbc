@@ -44,6 +44,6 @@ final class RolePermissions
 
     private static function teacherPermissions(): array
     {
-        return ['view students','view assessments','create assessments','view notes','upload notes','view timetable','enter marks','view results','send notifications','submit support tickets'];
+        return ['view students','view assessments','create assessments','view notes','upload notes','view timetable','enter marks','view results','view attendance','send notifications','submit support tickets'];
     }
 }

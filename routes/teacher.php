@@ -6,6 +6,7 @@ use App\Livewire\Exams\ExamManager;
 use App\Livewire\Notifications\SendNotification;
 use App\Livewire\Teacher\LearnerList;
 use App\Livewire\Teacher\ViewResults;
+use App\Livewire\Teacher\AttendanceRegister;
 use App\Http\Controllers\ExamReportsController;
 use App\Http\Controllers\MarksImportTemplateController;
 use App\Http\Controllers\TeacherClassListController;
@@ -30,4 +31,4 @@ Route::get('/timetable', fn() => view('teacher.timetable.index'))->middleware(['
 Route::get('/newsletters', [PortalContentController::class, 'newsletters'])->middleware('feature:newsletters')->name('newsletters');
 Route::get('/exam-timetable', [PortalContentController::class, 'teacherExamTimetable'])->middleware(['permission:view timetable', 'feature:timetable'])->name('exam-timetable');
 Route::get('/timetable/print', [\App\Http\Controllers\TimetableController::class, 'printTeacher'])->middleware('permission:view timetable')->name('timetable.print');
-Route::get('/attendance', fn() => view('teacher.attendance.index'))->middleware('permission:view attendance|mark attendance')->name('attendance.index');
+Route::get('/attendance', AttendanceRegister::class)->middleware('permission:view attendance|mark attendance')->name('attendance.index');
