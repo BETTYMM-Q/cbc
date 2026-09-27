@@ -70,41 +70,44 @@ class ModuleNotificationService
         });
     }
 
-    public function notificationsFor(?int $userId)
+    public function notificationsFor(?int $userId): \Illuminate\Support\Collection
     {
         $cacheKey = 'notification-targets:' . ($userId ?? 'guest');
 
         return $this->notificationsCache[$cacheKey] ??= Cache::remember($cacheKey, now()->addSeconds(20), function () use ($userId) {
             $query = SchoolNotification::query()->whereIn('status', ['queued', 'sent', 'partial']);
         $user = $userId ? User::with(['guardian.learners', 'learner.schoolClass', 'staffMember'])->find($userId) : null;
-        if ($user?->hasRole('super-admin')) return $query->whereRaw('1 = 0');
+        if ($user?->hasRole('super-admin')) return $query->whereRaw('1 = 0')->get();
         // School staff receive the school's notices in their portal. Learner
         // and guardian users keep the stricter grade/class targeting below.
-        if ($user?->staffMember) return $query;
+        if ($user?->staffMember) return $query->get();
         $guardian = $user?->guardian;
 
         if ($guardian) {
-            return $this->filterForLearners($query, $guardian->learners);
+            return $this->filterForLearners($query, $guardian->learners)->get();
         }
 
         $learner = $user?->learner;
         if (! $learner || ! $learner->is_active) {
-            return $query->whereRaw('1 = 0');
+            return $query->whereRaw('1 = 0')->get();
         }
 
-        return $this->filterForLearners($query, collect([$learner]));
+        return $this->filterForLearners($query, collect([$learner]))->get();
         });
     }
 
     public function unreadCount(?int $userId): int
     {
         if (! $userId) return 0;
-        return $this->notificationsFor($userId)->whereDoesntHave('reads', fn ($read) => $read->where('user_id', $userId))->count();
+
+        return $this->notificationsFor($userId)
+            ->filter(fn ($notification) => $notification->reads()->where('user_id', $userId)->count() === 0)
+            ->count();
     }
 
     public function markRead(int $notificationId, int $userId): void
     {
-        abort_unless($this->notificationsFor($userId)->whereKey($notificationId)->exists(), 404);
+        abort_unless($this->notificationsFor($userId)->contains('id', $notificationId), 404);
         NotificationRead::updateOrCreate(['notification_id' => $notificationId, 'user_id' => $userId], ['read_at' => now()]);
         Cache::forget('notification-targets:' . $userId);
     }
