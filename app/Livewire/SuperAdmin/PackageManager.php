@@ -12,7 +12,7 @@ class PackageManager extends Component
 
     public array $form = [
         'name' => '', 'description' => '', 'price' => '', 'billing_cycle' => 'termly',
-        'max_students' => '', 'max_staff' => '', 'is_active' => true,
+        'max_students' => '', 'max_staff' => '', 'is_active' => true, 'is_visible_to_schools' => true,
     ];
 
     /** @var array<string,bool> */
@@ -40,7 +40,7 @@ class PackageManager extends Component
     {
         $this->resetValidation();
         $this->editingId = null;
-        $this->form = ['name' => '', 'description' => '', 'price' => '', 'billing_cycle' => 'termly', 'max_students' => '', 'max_staff' => '', 'is_active' => true];
+        $this->form = ['name' => '', 'description' => '', 'price' => '', 'billing_cycle' => 'termly', 'max_students' => '', 'max_staff' => '', 'is_active' => true, 'is_visible_to_schools' => true];
         $this->features = array_fill_keys(array_keys(self::AVAILABLE_FEATURES), false);
         $this->showForm = true;
     }
@@ -55,12 +55,21 @@ class PackageManager extends Component
             'price' => (string) $package->price, 'billing_cycle' => $package->billing_cycle,
             'max_students' => (string) $package->max_students, 'max_staff' => (string) $package->max_staff,
             'is_active' => (bool) $package->is_active,
+            'is_visible_to_schools' => (bool) $package->is_visible_to_schools,
         ];
         $this->features = array_fill_keys(array_keys(self::AVAILABLE_FEATURES), false);
         foreach ($package->features ?? [] as $key) {
             $this->features[$key] = true;
         }
         $this->showForm = true;
+    }
+
+    public function createFree(): void
+    {
+        $this->create();
+        $this->form['name'] = 'Free';
+        $this->form['price'] = '0';
+        $this->form['description'] = 'Free school plan.';
     }
 
     public function save(): void

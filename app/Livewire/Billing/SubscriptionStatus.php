@@ -20,7 +20,7 @@ class SubscriptionStatus extends Component
     {
         $school = auth()->user()->school;
         abort_unless($school, 403);
-        $this->selectedPackageId = $school->package_id ?? Package::where('is_active', true)->orderBy('price')->value('id');
+        $this->selectedPackageId = $school->package_id ?? Package::offeredToSchools()->orderBy('price')->value('id');
         $this->phone = (string) $school->phone;
     }
 
@@ -38,9 +38,15 @@ class SubscriptionStatus extends Component
         ]);
 
         $school = auth()->user()->school;
-        $package = Package::where('is_active', true)->findOrFail($this->selectedPackageId);
+        $package = Package::offeredToSchools()->findOrFail($this->selectedPackageId);
         $students = max($school->activeStudentCount(), 1);
         $amount = round($package->price * $students, 2);
+
+        if ($amount <= 0) {
+            $school->assignPackage($package, now()->addMonths(3)->toDateString(), auth()->id(), 'Free plan selected by school administrator.');
+            session()->flash('success', 'The free plan has been activated for this school.');
+            return;
+        }
 
         $gateway = app(PlatformPaymentGateway::class);
         if (! $gateway->configured()) {
@@ -99,7 +105,7 @@ class SubscriptionStatus extends Component
 
         return view('livewire.billing.subscription-status', [
             'school' => $school,
-            'packages' => Package::where('is_active', true)->orderBy('price')->get(),
+            'packages' => Package::offeredToSchools()->orderBy('price')->get(),
             'payments' => SubscriptionPayment::latest()->limit(10)->get(),
             // This is the school-scoped platform billing record. Confirmed
             // subscription payments create a paid invoice, while invoices

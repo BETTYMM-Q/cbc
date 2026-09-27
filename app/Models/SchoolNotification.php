@@ -26,4 +26,5 @@ class SchoolNotification extends Model
 
     public function sender() { return $this->belongsTo(StaffMember::class, 'sender_id'); }
     public function logs()   { return $this->hasMany(NotificationLog::class, 'notification_id'); }
+    public function reads()  { return $this->hasMany(NotificationRead::class, 'notification_id'); }
 }

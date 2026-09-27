@@ -4,6 +4,8 @@ use App\Livewire\Teacher\SignatureSettings;
 use App\Livewire\Assessment\BulkAssessmentEntry;
 use App\Livewire\Exams\ExamManager;
 use App\Livewire\Notifications\SendNotification;
+use App\Livewire\Notifications\NotificationInbox;
+use App\Livewire\Support\FeatureRequestCenter;
 use App\Livewire\Teacher\LearnerList;
 use App\Livewire\Teacher\ViewResults;
 use App\Livewire\Teacher\AttendanceRegister;
@@ -15,6 +17,7 @@ use App\Http\Controllers\PortalContentController;
 
 Route::get('/dashboard', fn() => view('teacher.dashboard'))->name('dashboard');
 Route::get('/support', SupportTicketCenter::class)->middleware('permission:submit support tickets')->name('support.index');
+Route::get('/feature-requests', FeatureRequestCenter::class)->name('feature-requests.index');
 Route::get('/learners', LearnerList::class)->middleware('permission:view students')->name('learners.index');
 Route::get('/classes/{schoolClass}/print', [TeacherClassListController::class, 'print'])->middleware('permission:view students')->name('classes.print');
 Route::get('/assessment', BulkAssessmentEntry::class)->middleware('permission:view assessments')->name('assessment.index');
@@ -25,6 +28,7 @@ Route::get('/exams/{exam}/report-cards', [ExamReportsController::class, 'resultC
 Route::get('/exams/report-cards/export/{export}', [ExamReportsController::class, 'downloadExport'])->middleware('permission:view report cards')->name('exams.report-cards.export');
 Route::get('/exams/{exam}/merit-list', [ExamReportsController::class, 'meritList'])->middleware('permission:view report cards')->name('exams.merit-list');
 Route::get('/notifications', SendNotification::class)->middleware('permission:send notifications')->name('notifications.index');
+Route::get('/notifications/inbox', NotificationInbox::class)->name('notifications.inbox');
 Route::get('/signature', SignatureSettings::class)->middleware('permission:enter marks')->name('signature.index');
 Route::get('/notes', fn() => view('teacher.notes.index'))->middleware(['permission:view notes', 'feature:lesson_plans'])->name('notes.index');
 Route::get('/timetable', fn() => view('teacher.timetable.index'))->middleware(['permission:view timetable', 'feature:timetable'])->name('timetable.index');

@@ -10,9 +10,22 @@ class NotificationInbox extends Component
 {
     use WithPagination;
 
+    public function markRead(int $notificationId, ModuleNotificationService $notificationService): void
+    {
+        $notificationService->markRead($notificationId, auth()->id());
+        $this->resetPage();
+    }
+
+    public function markAllRead(ModuleNotificationService $notificationService): void
+    {
+        $notificationService->markAllRead(auth()->id());
+        $this->resetPage();
+    }
+
     public function render(ModuleNotificationService $notificationService)
     {
         $notifications = $notificationService->notificationsFor(auth()->id())
+            ->with(['reads' => fn ($reads) => $reads->where('user_id', auth()->id())])
             ->latest()
             ->paginate(15);
 

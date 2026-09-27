@@ -13,6 +13,7 @@ use App\Models\LearningArea;
 use App\Models\LearningNote;
 use App\Models\SchoolClass;
 use App\Models\SchoolNotification;
+use App\Models\NotificationRead;
 use App\Models\StaffMember;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -50,9 +51,7 @@ class ModuleNotificationService
                     'notes' => LearningNote::where('created_at', '>=', $since)->count(),
                     'payments' => FeePayment::where('created_at', '>=', $since)->count(),
                     'inventory' => InventoryItem::where('created_at', '>=', $since)->count(),
-                    'notifications' => $this->notificationsFor($userId)
-                        ->where('created_at', '>=', $since)
-                        ->count(),
+                    'notifications' => $this->unreadCount($userId),
                     'support' => SupportTicket::query()
                         ->when(! $isSuperAdmin, fn ($query) => $query->where('created_by', $userId))
                         ->where('status', 'open')
@@ -77,7 +76,11 @@ class ModuleNotificationService
 
         return $this->notificationsCache[$cacheKey] ??= Cache::remember($cacheKey, now()->addSeconds(20), function () use ($userId) {
             $query = SchoolNotification::query()->whereIn('status', ['queued', 'sent', 'partial']);
-            $user = $userId ? User::with(['guardian.learners', 'learner.schoolClass'])->find($userId) : null;
+        $user = $userId ? User::with(['guardian.learners', 'learner.schoolClass', 'staffMember'])->find($userId) : null;
+        if ($user?->hasRole('super-admin')) return $query->whereRaw('1 = 0');
+        // School staff receive the school's notices in their portal. Learner
+        // and guardian users keep the stricter grade/class targeting below.
+        if ($user?->staffMember) return $query;
         $guardian = $user?->guardian;
 
         if ($guardian) {
@@ -91,6 +94,26 @@ class ModuleNotificationService
 
         return $this->filterForLearners($query, collect([$learner]));
         });
+    }
+
+    public function unreadCount(?int $userId): int
+    {
+        if (! $userId) return 0;
+        return $this->notificationsFor($userId)->whereDoesntHave('reads', fn ($read) => $read->where('user_id', $userId))->count();
+    }
+
+    public function markRead(int $notificationId, int $userId): void
+    {
+        abort_unless($this->notificationsFor($userId)->whereKey($notificationId)->exists(), 404);
+        NotificationRead::updateOrCreate(['notification_id' => $notificationId, 'user_id' => $userId], ['read_at' => now()]);
+        Cache::forget('notification-targets:' . $userId);
+    }
+
+    public function markAllRead(int $userId): void
+    {
+        $ids = $this->notificationsFor($userId)->pluck('id');
+        foreach ($ids as $id) NotificationRead::updateOrCreate(['notification_id' => $id, 'user_id' => $userId], ['read_at' => now()]);
+        Cache::forget('notification-targets:' . $userId);
     }
 
     private function filterForLearners($query, $learners)

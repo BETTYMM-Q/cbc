@@ -23,7 +23,7 @@
             @foreach([
                 ['teacher.dashboard','Dashboard', null],['teacher.learners.index','My Learners','view students'],['teacher.exams.index','Exams & Marks','view exams|enter marks'],['teacher.results.index','View Results','view results'],
                 ['teacher.assessment.index','Assessments','view assessments'],['teacher.notes.index','Learning Notes','view notes'],['teacher.notifications.index','Message Parents','send notifications'],['teacher.signature.index','Report-card Signature','enter marks'],['teacher.attendance.index','Attendance','view attendance|mark attendance'],
-                ['teacher.timetable.index','Timetable','view timetable'],['teacher.exam-timetable','Exam Timetable','view timetable'],['teacher.newsletters','Newsletters',null],['teacher.support.index','Support Tickets','submit support tickets'],
+                ['teacher.timetable.index','Timetable','view timetable'],['teacher.exam-timetable','Exam Timetable','view timetable'],['teacher.newsletters','Newsletters',null],['teacher.feature-requests.index','Request a Feature',null],['teacher.support.index','Support Tickets','submit support tickets'],
             ] as [$route,$label,$permission])
             @if($permission === null || collect(explode('|', $permission))->contains(fn ($ability) => auth()->user()->can($ability)))
                 @php($lockedFeature = $featureMap[$route] ?? null)
@@ -47,13 +47,13 @@
         <header class="bg-white h-14 flex items-center gap-3 px-4 shadow-sm md:px-6">
             <button type="button" data-mobile-menu aria-expanded="false" class="relative z-50 rounded-lg p-2 text-gray-700 hover:bg-gray-100 md:hidden" aria-label="Open menu">&#9776;</button>
             <h1 class="text-lg font-semibold text-gray-800">{{ $header ?? auth()->user()->gradeBandLabel() ?? 'Teacher Portal' }}</h1>
-            @include('layouts.partials.online-users')
+            @include('layouts.partials.online-users') @include('layouts.partials.notification-link') <a href="{{ route('account.password.edit') }}" class="rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-gray-700">Password</a>
             @include('layouts.partials.theme-toggle')
             <form method="POST" action="{{ route('logout') }}" class="ml-auto">@csrf<button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Log out</button></form>
         </header>
         <main class="min-w-0 overflow-x-hidden p-4 md:p-6">
             @include('layouts.partials.breadcrumbs')
-            @include('layouts.partials.platform-broadcast')
+            @include('layouts.partials.platform-broadcast') @include('layouts.partials.platform-advertisement')
             @yield('content')
             @if(isset($slot) && $slot instanceof \Illuminate\View\ComponentSlot)
                 {{ $slot }}

@@ -21,7 +21,7 @@ class FeatureAccessController extends Controller
             'featureLabel' => $labels[$feature],
             'school' => $school->load('package'),
             'packages' => Package::query()
-                ->where('is_active', true)
+                ->offeredToSchools()
                 ->orderBy('price')
                 ->get()
                 ->filter(fn (Package $package) => $package->hasFeature($feature)),

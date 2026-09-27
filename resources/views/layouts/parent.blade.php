@@ -15,8 +15,8 @@
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-xl font-bold text-green-900">{{ config('school.name') }}</h1>
         @include('layouts.partials.online-users')
-        @include('layouts.partials.theme-toggle')
-        <div class="flex items-center gap-3"><a href="{{ route('account.password.edit') }}" class="text-sm text-green-700">Change password</a><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="text-sm text-red-600">Logout</button></form></div>
+        @include('layouts.partials.notification-link') @include('layouts.partials.theme-toggle')
+        <div class="flex items-center gap-3"><a href="{{ route('account.password.edit') }}" class="rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-green-700">Password</a><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="text-sm text-red-600">Logout</button></form></div>
     </div>
     <nav class="mb-6 flex flex-wrap gap-2">
         @php($featureMap = ['parent.fees.index' => 'fees', 'parent.notes.index' => 'lesson_plans', 'parent.exam-timetable' => 'timetable', 'parent.newsletters' => 'newsletters'])
@@ -31,7 +31,7 @@
         <a href="{{ route('learning.miyagi') }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-lg text-sm font-medium bg-green-700 text-white hover:bg-green-800">Miyagi AI Learning</a>
     </nav>
     @include('layouts.partials.breadcrumbs')
-    @include('layouts.partials.platform-broadcast')
+    @include('layouts.partials.platform-broadcast') @include('layouts.partials.platform-advertisement')
     @yield('content')
     @if(isset($slot) && $slot instanceof \Illuminate\View\ComponentSlot)
         {{ $slot }}

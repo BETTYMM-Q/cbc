@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-bold text-gray-800">Subscription Plans</h1>
             <p class="text-sm text-gray-500">What schools pay to use the platform, and which modules each plan unlocks.</p>
         </div>
-        <button wire:click="create" class="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-800">+ New plan</button>
+        <div class="flex gap-2"><button wire:click="createFree" class="rounded-lg border border-green-300 px-4 py-2.5 text-sm font-semibold text-green-700">+ Free plan</button><button wire:click="create" class="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-800">+ New plan</button></div>
     </div>
 
     @if (session('success'))
@@ -17,7 +17,7 @@
                 <div class="flex items-start justify-between">
                     <div>
                         <p class="font-bold text-gray-800">{{ $package->name }}</p>
-                        <p class="text-2xl font-bold text-green-700 mt-1">KSh {{ number_format($package->price, 0) }}<span class="text-sm font-normal text-gray-500">/student/{{ rtrim($package->billing_cycle, 'ly') === 'term' ? 'term' : $package->billing_cycle }}</span></p>
+                        <p class="text-2xl font-bold text-green-700 mt-1">{{ (float) $package->price === 0.0 ? 'Free' : 'KSh '.number_format($package->price, 0) }}<span class="text-sm font-normal text-gray-500">{{ (float) $package->price === 0.0 ? '' : '/student/'.(rtrim($package->billing_cycle, 'ly') === 'term' ? 'term' : $package->billing_cycle) }}</span></p>
                     </div>
                     @if ($package->is_active)
                         <span class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">Active</span>
@@ -26,7 +26,7 @@
                     @endif
                 </div>
                 <p class="mt-2 text-sm text-gray-600">{{ $package->description }}</p>
-                <p class="mt-2 text-xs text-gray-500">{{ $package->schools_count }} school(s) on this plan · SMS units are paid and allocated separately after payment confirmation.</p>
+                <p class="mt-2 text-xs text-gray-500">{{ $package->schools_count }} school(s) on this plan · {{ $package->is_visible_to_schools ? 'Visible in school subscription choices.' : 'Hidden from school subscription choices.' }}</p>
                 <div class="mt-3 flex flex-wrap gap-1.5">
                     @foreach ($package->features ?? [] as $feature)
                         <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{{ \App\Livewire\SuperAdmin\PackageManager::AVAILABLE_FEATURES[$feature] ?? $feature }}</span>
@@ -89,7 +89,7 @@
                         </div>
                     </div>
 
-                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="form.is_active"> <span class="text-sm">Offered to schools</span></label>
+                    <div class="space-y-2"><label class="flex items-center gap-2"><input type="checkbox" wire:model="form.is_active"> <span class="text-sm">Active plan</span></label><label class="flex items-center gap-2"><input type="checkbox" wire:model="form.is_visible_to_schools"> <span class="text-sm">Display this plan and pricing in school portals</span></label></div>
 
                     <div class="flex justify-end gap-3 pt-2">
                         <button type="button" wire:click="$set('showForm', false)" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600">Cancel</button>

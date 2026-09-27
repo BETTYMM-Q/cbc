@@ -23,7 +23,7 @@
             @if(auth()->user()?->hasRole('super-admin'))
                 @foreach([
                     'Platform overview' => [['admin.platform-dashboard.index', 'Command Centre'], ['admin.schools.index', 'Registered Schools'], ['admin.platform-analytics.index', 'Platform Analytics'], ['admin.platform-finance.index', 'Platform Finance']],
-                    'Commercial' => [['admin.plans.index', 'Plans & Feature Access'], ['admin.roles.index', 'Access & Permissions'], ['admin.invoices.index', 'Platform Invoices'], ['admin.sms-control.index', 'SMS Control Center'], ['admin.risk.platform', 'CatBoost Learner Support'], ['admin.broadcasts.index', 'Broadcast Centre']],
+                    'Commercial' => [['admin.plans.index', 'Plans & Feature Access'], ['admin.roles.index', 'Access & Permissions'], ['admin.invoices.index', 'Platform Invoices'], ['admin.sms-control.index', 'SMS Control Center'], ['admin.risk.platform', 'CatBoost Learner Support'], ['admin.broadcasts.index', 'Broadcast Centre'], ['admin.advertisements.index', 'Platform Advertisements'], ['admin.feature-requests.index', 'Feature Requests']],
                     'Security & Support' => [['admin.platform-settings.index', 'Global Settings & APIs'], ['admin.user-accounts.index', 'User Accounts & Passwords'], ['admin.support.index', 'School Support Tickets'], ['admin.impersonate.index', 'School Support Access'], ['admin.system-logs.index', 'Audit Logs'], ['admin.diagnostics.index', 'System Diagnostics'], ['admin.platform-maintenance.index', 'Maintenance Mode'], ['admin.legal-policies.index', 'Legal Policies']],
                 ] as $section => $links)
                     <div><p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-green-300">{{ $section }}</p>@foreach($links as [$route, $label])<a href="{{ route($route) }}" class="flex items-center rounded-lg px-4 py-2.5 text-green-100 hover:bg-green-700">{{ $label }}</a>@endforeach</div>
@@ -70,11 +70,11 @@
         <header class="flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6">
                 <button type="button" data-mobile-menu aria-expanded="false" class="relative z-50 rounded-lg p-2 text-gray-700 hover:bg-gray-100 md:hidden" aria-label="Open menu">&#9776;</button>
             <h1 class="text-xl font-semibold text-gray-800">@yield('header', 'Dashboard')</h1>
-            <div class="flex items-center gap-2 sm:gap-4"><span class="hidden text-sm text-gray-500 sm:inline">{{ config('school.academic_year') }}</span>@include('layouts.partials.online-users')@include('layouts.partials.theme-toggle')<form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Log out</button></form></div>
+            <div class="flex items-center gap-2 sm:gap-4"><span class="hidden text-sm text-gray-500 sm:inline">{{ config('school.academic_year') }}</span>@include('layouts.partials.online-users')@include('layouts.partials.notification-link')<a href="{{ route('account.password.edit') }}" class="rounded-lg border border-gray-200 px-2.5 py-2 text-sm font-medium text-gray-700">Password</a>@include('layouts.partials.theme-toggle')<form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Log out</button></form></div>
         </header>
         <main class="min-w-0 overflow-x-hidden p-4 md:p-6">
             @include('layouts.partials.breadcrumbs')
-            @include('layouts.partials.platform-broadcast')
+            @include('layouts.partials.platform-broadcast') @include('layouts.partials.platform-advertisement')
             @yield('content')
             @if(isset($slot) && $slot instanceof \Illuminate\View\ComponentSlot){{ $slot }}@endif
         </main>

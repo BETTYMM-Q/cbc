@@ -54,7 +54,7 @@ class SubscriptionPaymentController extends Controller
         $school = $request->user()->school;
         abort_unless($school, 403, 'Only a school account can pay for a subscription.');
 
-        $package = Package::where('is_active', true)->findOrFail($data['package_id']);
+        $package = Package::offeredToSchools()->findOrFail($data['package_id']);
         $students = max($school->activeStudentCount(), 1);
         $amount = round($package->price * $students, 2);
 
