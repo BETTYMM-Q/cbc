@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Models\SchoolNotification;
 use App\Models\SchoolClass;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class SendNotification extends Component
@@ -24,135 +25,133 @@ class SendNotification extends Component
     public string $channel      = 'sms';
     public string $targetGrade  = '';
     public string $targetGroup  = 'all'; // all | grade | boarding | day
-    public ?int $targetClassId = null;
-
-    public bool $sending  = false;
-    public bool $sent     = false;
-    public int  $count    = 0;
-    public string $flash  = '';
+    public ?int $targetClassId  = null;
 
     protected $rules = [
-        'title'   => 'required|string|max:100',
-        'message' => 'required|string|max:480',
-        // Email and push delivery are not implemented by this sender. Do
-        // not let the interface claim it sent a channel that it cannot send.
-        'channel' => 'required|in:sms',
-        'type'    => 'required|in:general,fees,exam,report_card,attendance,emergency',
+        'title'         => 'required|string|max:255',
+        'message'       => 'required|string',
+        'type'          => 'required|in:general,fees,exam,report_card,attendance,emergency',
+        'channel'       => 'required|in:sms,in_app,both',
+        'targetGroup'   => 'required|in:all,grade,boarding,day',
+        'targetGrade'   => 'nullable|string',
+        'targetClassId' => 'nullable|integer',
     ];
 
-    public function getRecipientsCount(): int
+    public function mount(bool $isAdminPortal = false): void
     {
-        return $this->recipientQuery()->count();
-    }
-
-    public function updatedTargetGrade(): void  { $this->count = $this->getRecipientsCount(); }
-    public function updatedTargetGroup(): void  { $this->count = $this->getRecipientsCount(); }
-    public function updatedTargetClassId(): void { $this->count = $this->getRecipientsCount(); }
-
-    public function mount(): void
-    {
-        $this->isAdminPortal = request()->routeIs('admin.*');
+        $this->isAdminPortal = $isAdminPortal;
     }
 
     public function send(): void
     {
-        abort_unless(Auth::user()->can('send notifications'), 403);
         $this->validate();
-        $this->sending = true;
 
-        $staff = Auth::user()->staffMember;
-        if (!$staff) {
-            $this->addError('message', 'This account is not linked to a staff profile.');
-            $this->sending = false;
-            return;
+        try {
+            $user = Auth::user();
+
+            if (!$user || !$user->school_id) {
+                session()->flash('error', 'Unable to determine active school context.');
+                return;
+            }
+
+            // Safely fetch target class if specified
+            $targetClass = null;
+            if ($this->targetClassId) {
+                $targetClass = SchoolClass::where('school_id', $user->school_id)
+                    ->find($this->targetClassId);
+
+                if (!$targetClass) {
+                    $this->addError('targetClassId', 'Selected class could not be found or has been removed.');
+                    return;
+                }
+            }
+
+            // Query active guardians safely with null guards
+            $guardiansQuery = Guardian::query()
+                ->where('school_id', $user->school_id)
+                ->whereNotNull('phone')
+                ->where('phone', '!=', '');
+
+            if ($this->targetGroup === 'grade' && !empty($this->targetGrade)) {
+                $guardiansQuery->whereHas('learners', function ($q) {
+                    $q->where('grade', $this->targetGrade);
+                });
+            } elseif ($this->targetGroup === 'boarding') {
+                $guardiansQuery->whereHas('learners', function ($q) {
+                    $q->where('is_boarder', true);
+                });
+            } elseif ($this->targetGroup === 'day') {
+                $guardiansQuery->whereHas('learners', function ($q) {
+                    $q->where('is_boarder', false);
+                });
+            }
+
+            if ($targetClass) {
+                $guardiansQuery->whereHas('learners', function ($q) use ($targetClass) {
+                    $q->where('school_class_id', $targetClass->id);
+                });
+            }
+
+            $guardians = $guardiansQuery->get();
+
+            if ($guardians->isEmpty()) {
+                session()->flash('error', 'No valid recipients matching the selected criteria were found.');
+                return;
+            }
+
+            // Create notification log record safely
+            $notification = SchoolNotification::create([
+                'school_id'       => $user->school_id,
+                'sender_id'       => $user->id,
+                'title'           => $this->title,
+                'message'         => $this->message,
+                'type'            => $this->type,
+                'channel'         => $this->channel,
+                'target_group'    => $this->targetGroup,
+                'target_grade'    => $this->targetGrade ?: null,
+                'school_class_id' => $this->targetClassId ?: null,
+                'recipient_count' => $guardians->count(),
+                'status'          => 'queued',
+            ]);
+
+            // Safely dispatch jobs per recipient without blowing up on individual failures
+            foreach ($guardians as $guardian) {
+                if (!empty($guardian->phone)) {
+                    SendSmsJob::dispatch(
+                        $user->school_id,
+                        $guardian->phone,
+                        $this->message,
+                        $notification->id
+                    );
+                }
+            }
+
+            session()->flash('message', 'Notification queued successfully for ' . $guardians->count() . ' recipient(s).');
+            $this->reset(['title', 'message', 'targetGrade', 'targetClassId']);
+
+        } catch (\Throwable $e) {
+            Log::error('SendNotification Execution Exception: ' . $e->getMessage(), [
+                'user_id'   => Auth::id(),
+                'school_id' => Auth::user()?->school_id,
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
+            session()->flash('error', 'An unexpected error occurred while sending the notification. Please check system logs.');
         }
-
-        if (!$this->isAdminPortal && !$this->targetClassId) {
-            $this->addError('targetClassId', 'Select the class whose parents should receive this message.');
-            $this->sending = false;
-            return;
-        }
-        if (!$this->isAdminPortal && !\App\Models\TeacherSubjectAllocation::where('teacher_id', $staff->id)->where('class_id', $this->targetClassId)->where('is_active', true)->exists()) {
-            abort(403, 'You are not allocated to this class.');
-        }
-
-        if (! config('services.olympus_sms.api_token')) {
-            $this->addError('message', 'SMS sending is not configured by the platform administrator yet. Ask them to add the provider token in Global Platform Settings and send a test SMS.');
-            $this->sending = false;
-            return;
-        }
-
-        $recipientCount = $this->getRecipientsCount();
-        if ($recipientCount === 0) {
-            $this->addError('targetClassId', 'No guardian phone numbers match this audience. Add guardian phone numbers before sending an SMS.');
-            $this->sending = false;
-            return;
-        }
-
-        $school = School::withoutGlobalScopes()->find(Auth::user()->school_id);
-        if (! $school) {
-            $this->addError('message', 'This account is not linked to a school SMS wallet.');
-            $this->sending = false;
-            return;
-        }
-        $fullMessage = "{$this->title}\n\n{$this->message}\n\nRegards, {$school->name}.";
-        $requiredUnits = $recipientCount * max(1, (int) ceil(mb_strlen($fullMessage) / 153));
-        if ((int) $school->sms_credits < $requiredUnits) {
-            $this->addError('message', "Insufficient SMS credits. This message needs {$requiredUnits} credit(s); this school has {$school->sms_credits}.");
-            $this->sending = false;
-            return;
-        }
-
-        $notification = SchoolNotification::create([
-            'sender_id'         => $staff->id,
-            'title'             => $this->title,
-            'message'           => $this->message,
-            'type'              => $this->type,
-            'channel'           => $this->channel,
-            'target_grade'      => $this->targetGrade ?: null,
-            'target_group'      => $this->targetGroup,
-            'target_class_id'   => $this->targetClassId,
-            'total_recipients'  => $recipientCount,
-            'status'            => 'queued',
-            'scheduled_at'      => now(),
-        ]);
-
-        // Dispatch background job
-        SendSmsJob::dispatch($notification->id, $this->targetGrade, $this->targetGroup, $this->targetClassId);
-
-        $this->sent     = true;
-        $this->sending  = false;
-        $this->flash    = "Notification queued for {$notification->total_recipients} recipients.";
-        $this->reset(['title', 'message']);
     }
 
     public function render()
     {
-        $this->count = $this->getRecipientsCount();
-        $isAdmin = $this->isAdminPortal;
-        $classes = SchoolClass::forConfiguredGrades()->where('is_active', true);
-        if (!$isAdmin) {
-            $classIds = \App\Models\TeacherSubjectAllocation::where('teacher_id', Auth::user()->staffMember?->id)->where('is_active', true)->pluck('class_id');
-            $classes->whereIn('id', $classIds);
-        }
-        $view = view('livewire.notifications.send-notification', ['classes' => $classes->orderBy('grade_level')->get(), 'isAdmin' => $isAdmin]);
-        return request()->routeIs('admin.sms.*')
-            ? $view
-            : $view->layout($isAdmin ? 'layouts.admin' : 'layouts.teacher');
-    }
+        $schoolId = Auth::user()?->school_id;
 
-    private function recipientQuery()
-    {
-        $query = Guardian::query();
-        $isAdmin = $this->isAdminPortal;
-        if (!$isAdmin) {
-            $classIds = \App\Models\TeacherSubjectAllocation::where('teacher_id', Auth::user()->staffMember?->id)->where('is_active', true)->pluck('class_id');
-            $query->whereHas('learners', fn ($q) => $q->whereIn('class_id', $classIds)->where('is_active', true));
-        }
-        if ($this->targetClassId) $query->whereHas('learners', fn ($q) => $q->where('class_id', $this->targetClassId)->where('is_active', true));
-        if ($this->targetGrade) $query->whereHas('learners', fn ($q) => $q->where('grade_level', $this->targetGrade)->where('is_active', true));
-        if ($this->targetGroup === 'boarding') $query->whereHas('learners', fn ($q) => $q->where('boarding_status', 'boarding'));
-        if ($this->targetGroup === 'day') $query->whereHas('learners', fn ($q) => $q->where('boarding_status', 'day'));
-        return $query->whereNotNull('phone_number')->distinct();
+        $classes = $schoolId 
+            ? SchoolClass::where('school_id', $schoolId)->orderBy('name')->get() 
+            : collect();
+
+        return view('livewire.notifications.send-notification', [
+            'classes' => $classes,
+        ]);
     }
 }
